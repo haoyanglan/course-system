@@ -1,0 +1,3 @@
+### 最终选课测试
+POST http://localhost:8080/enroll/submit?studentId=1&courseId=2
+Accept: application/json

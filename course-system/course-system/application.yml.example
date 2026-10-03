@@ -1,0 +1,28 @@
+server:
+  port: 8080
+
+spring:
+  # 数据库配置（把 example 复制为 application.yml 后，填写你的真实配置）
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/courserec_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: "你的数据库密码"
+
+  # AI 智能中枢配置（DeepSeek / OpenAI 兼容接口）
+  ai:
+    openai:
+      api-key: "你的 API Key"
+      base-url: "https://api.deepseek.com"
+      chat:
+        options:
+          model: "deepseek-chat"
+
+# MyBatis-Plus 数据库映射配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    # 需要调试 SQL 时，取消下面一行注释：
+    # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+

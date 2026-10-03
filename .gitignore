@@ -1,0 +1,8 @@
+# 本地运行日志
+*.log
+
+# 前端构建产物（course-frontend/.gitignore 已覆盖，这里兜底）
+course-frontend/dist/
+
+# 后端构建产物（course-system/.gitignore 已覆盖，这里兜底）
+course-system/**/target/
