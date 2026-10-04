@@ -6,11 +6,17 @@ import com.courserec.coursesystem.entity.ForumComment;
 import com.courserec.coursesystem.entity.ForumPost;
 import com.courserec.coursesystem.service.IForumCommentService;
 import com.courserec.coursesystem.service.IForumPostService;
+import com.courserec.coursesystem.service.ISysUserService;
+import com.courserec.coursesystem.entity.SysUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 @CrossOrigin // 别忘了允许跨域！
 @RestController
@@ -19,6 +25,7 @@ public class ForumController {
 
     @Autowired private IForumPostService forumPostService;
     @Autowired private IForumCommentService forumCommentService;
+    @Autowired private ISysUserService sysUserService;
 
     // 1. 获取帖子列表（支持关键词搜索），并把评论也查出来塞进去
     @GetMapping("/list")
@@ -32,18 +39,29 @@ public class ForumController {
 
         List<ForumPost> posts = forumPostService.list(query);
 
-        // 遍历每个帖子，去查属于它的评论
-        for (ForumPost post : posts) {
-            QueryWrapper<ForumComment> cq = new QueryWrapper<>();
-            cq.eq("post_id", post.getId()).orderByAsc("create_time");
-            post.setComments(forumCommentService.list(cq));
+        if (!posts.isEmpty()) {
+            List<Long> ids = posts.stream().map(ForumPost::getId).collect(Collectors.toList());
+            List<ForumComment> comments = forumCommentService.list(new QueryWrapper<ForumComment>()
+                    .in("post_id", ids).orderByAsc("create_time"));
+            Map<Long, List<ForumComment>> byPost = new HashMap<>();
+            for (ForumComment comment : comments) {
+                byPost.computeIfAbsent(comment.getPostId(), key -> new ArrayList<>()).add(comment);
+            }
+            for (ForumPost post : posts) post.setComments(byPost.getOrDefault(post.getId(), new ArrayList<>()));
         }
         return Result.success("获取成功", posts);
     }
 
     // 2. 发帖
     @PostMapping("/add")
-    public Result<String> addPost(@RequestBody ForumPost post) {
+    public Result<String> addPost(@RequestBody ForumPost post, @RequestAttribute("authUsername") String authUsername,
+                                  @RequestAttribute("authRole") String authRole) {
+        if (post.getContent() == null || post.getContent().isBlank()) return Result.error("帖子内容不能为空");
+        SysUser author = sysUserService.getOne(new QueryWrapper<SysUser>().eq("username", authUsername));
+        if (author == null) return Result.error("用户不存在");
+        post.setId(null);
+        post.setAuthorUsername(authUsername);
+        post.setAuthorName(author.getName() + ("ADMIN".equals(authRole) ? " (官方)" : ""));
         post.setCreateTime(LocalDateTime.now());
         post.setLikes(0);
         forumPostService.save(post);
@@ -53,17 +71,22 @@ public class ForumController {
     // 3. 点赞
     @PostMapping("/like")
     public Result<String> likePost(@RequestParam Long id) {
-        ForumPost post = forumPostService.getById(id);
-        if(post != null) {
-            post.setLikes(post.getLikes() + 1);
-            forumPostService.updateById(post);
-        }
-        return Result.success("点赞成功", null);
+        boolean updated = forumPostService.update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<ForumPost>()
+                .eq("id", id).setSql("likes = COALESCE(likes, 0) + 1"));
+        return updated ? Result.success("点赞成功", null) : Result.error("帖子不存在");
     }
 
     // 4. 评论
     @PostMapping("/comment")
-    public Result<String> addComment(@RequestBody ForumComment comment) {
+    public Result<String> addComment(@RequestBody ForumComment comment, @RequestAttribute("authUsername") String authUsername) {
+        if (comment.getContent() == null || comment.getContent().isBlank() || comment.getPostId() == null || forumPostService.getById(comment.getPostId()) == null) {
+            return Result.error("评论内容或帖子无效");
+        }
+        SysUser author = sysUserService.getOne(new QueryWrapper<SysUser>().eq("username", authUsername));
+        if (author == null) return Result.error("用户不存在");
+        comment.setId(null);
+        comment.setAuthorUsername(authUsername);
+        comment.setAuthorName(author.getName());
         comment.setCreateTime(LocalDateTime.now());
         forumCommentService.save(comment);
         return Result.success("评论成功", null);

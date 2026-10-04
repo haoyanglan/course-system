@@ -1,6 +1,9 @@
 package com.courserec.coursesystem.controller;
 
 import com.courserec.coursesystem.common.Result;
+import com.courserec.coursesystem.entity.SysUser;
+import com.courserec.coursesystem.service.ISysUserService;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +17,8 @@ public class ClassroomController {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private ISysUserService sysUserService;
 
     // ================= 管理员：管理物理教室 =================
     @GetMapping("/list")
@@ -44,15 +49,27 @@ public class ClassroomController {
     }
 
     @PostMapping("/reserve")
-    public Result<String> reserveClassroom(@RequestBody Map<String, Object> map) {
+    public Result<String> reserveClassroom(@RequestBody Map<String, Object> map,
+                                           @RequestAttribute("authUsername") String authUsername) {
+        SysUser user = sysUserService.getOne(new QueryWrapper<SysUser>().eq("username", authUsername));
+        if (user == null) return Result.error("用户不存在");
+        if (map.get("roomName") == null || map.get("reserveDate") == null || map.get("timeSlot") == null
+                || map.get("purpose") == null || map.get("purpose").toString().isBlank()) return Result.error("请填写完整预约信息");
+        Long existing = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM classroom_reservation WHERE room_name = ? AND reserve_date = ? AND time_slot = ?",
+                Long.class, map.get("roomName"), map.get("reserveDate"), map.get("timeSlot"));
+        if (existing != null && existing > 0) return Result.error("该时段已被预约，请重新查询空教室");
         jdbcTemplate.update("INSERT INTO classroom_reservation (room_name, applicant_name, reserve_date, time_slot, purpose) VALUES (?, ?, ?, ?, ?)",
-                map.get("roomName"), map.get("applicantName"), map.get("reserveDate"), map.get("timeSlot"), map.get("purpose"));
+                map.get("roomName"), user.getName(), map.get("reserveDate"), map.get("timeSlot"), map.get("purpose"));
         return Result.success("预约成功！", null);
     }
 
     @GetMapping("/myReservations")
-    public Result<List<Map<String, Object>>> getMyReservations(@RequestParam String applicantName) {
+    public Result<List<Map<String, Object>>> getMyReservations(@RequestParam String applicantName,
+                                                                 @RequestAttribute("authUsername") String authUsername) {
+        SysUser user = sysUserService.getOne(new QueryWrapper<SysUser>().eq("username", authUsername));
+        if (user == null) return Result.error("用户不存在");
         return Result.success("获取成功", jdbcTemplate.queryForList(
-                "SELECT * FROM classroom_reservation WHERE applicant_name = ? ORDER BY id DESC", applicantName));
+                "SELECT * FROM classroom_reservation WHERE applicant_name = ? ORDER BY id DESC", user.getName()));
     }
 }

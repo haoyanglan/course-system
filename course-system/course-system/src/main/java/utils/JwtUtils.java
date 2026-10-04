@@ -2,14 +2,15 @@ package com.courserec.coursesystem.utils;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import java.util.Date;
+import java.util.UUID;
 
 public class JwtUtils {
 
-    // JWT 签名密钥：优先读取环境变量 JWT_SECRET，未配置时使用演示默认值。
-    // 生产环境请务必通过环境变量注入强随机值。
+    // 未配置持久密钥时，每次启动生成随机密钥，避免公开仓库中的固定密钥被用于伪造令牌。
     private static final String SECRET =
-            System.getenv().getOrDefault("JWT_SECRET", "CourseSystemMyAwesomeSecretKey2026");
+            System.getenv().getOrDefault("JWT_SECRET", UUID.randomUUID().toString() + UUID.randomUUID());
     // 通行证的有效时间（这里设置的是 24 小时）
     private static final long EXPIRE_TIME = 24 * 60 * 60 * 1000;
 
@@ -21,5 +22,9 @@ public class JwtUtils {
                 .withClaim("role", role) // 告诉前端这是什么角色
                 .withExpiresAt(expireDate)
                 .sign(Algorithm.HMAC256(SECRET));
+    }
+
+    public static DecodedJWT verifyToken(String token) {
+        return JWT.require(Algorithm.HMAC256(SECRET)).build().verify(token);
     }
 }

@@ -13,8 +13,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vue-vendor': ['vue', 'axios'],
-          'element-plus': ['element-plus']
+          'vue-vendor': ['vue', 'axios']
         }
       }
     }

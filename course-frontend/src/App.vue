@@ -10,7 +10,7 @@
         </div>
         <el-form :model="loginForm" @keyup.enter="handleLogin">
           <el-form-item><el-input v-model="loginForm.username" placeholder="账号" size="large" /></el-form-item>
-          <el-form-item><el-input v-model="loginForm.password" type="password" placeholder="密码" size="large" show-password /></el-form-item>
+          <el-form-item><el-input v-model="loginForm.password" type="password" placeholder="密码" size="large" autocomplete="current-password" show-password /></el-form-item>
           <div style="text-align:right; margin-bottom: var(--space-3);"><el-link type="info" @click="isResetMode=true" class="text-xs">忘记密码？</el-link></div>
           <el-button type="primary" size="large" style="width:100%;" :loading="isLoggingIn" @click="handleLogin">立即登录</el-button>
           <div style="text-align:center; margin-top: var(--space-4);"><el-link type="default" @click="isRegisterMode=true" class="text-sm font-medium">注册新用户 &rarr;</el-link></div>
@@ -21,7 +21,7 @@
         <div class="auth-header"><h2 class="text-h2">✨ 注册新用户</h2></div>
         <el-form :model="registerForm" label-position="top">
           <el-row :gutter="24"><el-col :span="12"><el-form-item label="身份"><el-radio-group v-model="registerForm.role"><el-radio label="STUDENT">学生</el-radio><el-radio label="TEACHER">教师</el-radio></el-radio-group></el-form-item></el-col><el-col :span="12"><el-form-item label="姓名"><el-input v-model="registerForm.name" /></el-form-item></el-col></el-row>
-          <el-row :gutter="24"><el-col :span="12"><el-form-item label="账号"><el-input v-model="registerForm.username" /></el-form-item></el-col><el-col :span="12"><el-form-item label="密码"><el-input v-model="registerForm.password" type="password" show-password /></el-form-item></el-col></el-row>
+          <el-row :gutter="24"><el-col :span="12"><el-form-item label="账号"><el-input v-model="registerForm.username" autocomplete="username" /></el-form-item></el-col><el-col :span="12"><el-form-item label="密码（至少 8 位）"><el-input v-model="registerForm.password" type="password" autocomplete="new-password" show-password /></el-form-item></el-col></el-row>
           <el-row :gutter="24"><el-col :span="12"><el-form-item :label="registerForm.role==='STUDENT'?'学号':'工号'"><el-input v-model="registerForm.userNo" /></el-form-item></el-col><el-col :span="12"><el-form-item label="联系方式"><el-input v-model="registerForm.phone" placeholder="用于找回密码" /></el-form-item></el-col></el-row>
           <el-row :gutter="24" v-if="registerForm.role==='STUDENT'"><el-col :span="12"><el-form-item label="所属专业"><el-input v-model="registerForm.major" placeholder="如：软件工程" /></el-form-item></el-col><el-col :span="12"><el-form-item label="所在班级"><el-input v-model="registerForm.className" placeholder="如：软工2401班" /></el-form-item></el-col></el-row>
           <el-form-item label="教师介绍" v-if="registerForm.role==='TEACHER'"><el-input type="textarea" v-model="registerForm.intro" /></el-form-item>
@@ -38,46 +38,37 @@
 
     <div v-else class="app-layout">
       <header class="main-header">
-        <div class="header-left"><span class="app-icon">🎓</span><h1 class="text-h3" style="margin:0;">教务管理系统</h1></div>
+        <div class="header-left"><span class="app-icon" aria-hidden="true">学</span><div class="brand-copy"><strong>智能教务</strong><small>Campus Learning Hub</small></div></div>
+        <el-button class="mobile-menu-button" aria-label="打开导航菜单" @click="mobileMenuVisible = true">☰ 菜单</el-button>
         <div class="header-menu">
           <el-menu :default-active="activeMenu" mode="horizontal" @select="handleMenuSelect" :ellipsis="false">
-            <el-menu-item index="home" class="text-sm">首页</el-menu-item>
-            
-            <el-menu-item index="hall" v-if="userRole === 'STUDENT'" class="text-sm">选课大厅</el-menu-item>
-            <el-menu-item index="my" v-if="userRole === 'STUDENT'" class="text-sm">课表管理</el-menu-item>
-            <el-menu-item index="studentGrades" v-if="userRole === 'STUDENT'" class="text-sm">成绩查询</el-menu-item>
-            <el-menu-item index="studentAttendance" v-if="userRole === 'STUDENT'" class="text-sm">考勤记录</el-menu-item>
-            <el-menu-item index="studentEval" v-if="userRole === 'STUDENT'" class="text-sm">教学评估</el-menu-item>
-            <el-menu-item index="ai" v-if="userRole === 'STUDENT'" class="text-sm">AI 助手</el-menu-item>
-            
-            <el-menu-item index="teacherCourses" v-if="userRole === 'TEACHER'" class="text-sm">授课管理</el-menu-item>
-            <el-menu-item index="teacherGrades" v-if="userRole === 'TEACHER'" class="text-sm">成绩录入</el-menu-item>
-            <el-menu-item index="teacherQuality" v-if="userRole === 'TEACHER'" class="text-sm">教学质量</el-menu-item>
-            
-            <el-menu-item index="adminUsers" v-if="userRole === 'ADMIN'" class="text-sm">账号管理</el-menu-item>
-            <el-menu-item index="adminCourses" v-if="userRole === 'ADMIN'" class="text-sm">全局课程</el-menu-item>
-            <el-menu-item index="adminClassrooms" v-if="userRole === 'ADMIN'" class="text-sm">教室管理</el-menu-item>
-            <el-menu-item index="adminBanners" v-if="userRole === 'ADMIN'" class="text-sm">轮播图配置</el-menu-item>
-            
-            <el-menu-item index="reserveClassroom" v-if="userRole === 'STUDENT' || userRole === 'TEACHER'" class="text-sm">查空教室与预约</el-menu-item>
-            <el-menu-item index="forum" v-if="userRole === 'STUDENT' || userRole === 'TEACHER' || userRole === 'ADMIN'" class="text-sm">讨论论坛</el-menu-item>
-            <el-menu-item index="chat" v-if="userRole === 'STUDENT' || userRole === 'TEACHER'" class="text-sm"><el-badge :value="globalUnreadCount" :max="99" :hidden="globalUnreadCount === 0" class="nav-badge">师生交流</el-badge></el-menu-item>
+            <el-menu-item v-for="item in navItems" :key="item.key" :index="item.key">{{ item.label }}<el-badge v-if="item.key === 'chat' && globalUnreadCount" :value="globalUnreadCount" :max="99" class="nav-badge" /></el-menu-item>
           </el-menu>
         </div>
         <div class="header-right">
           <el-dropdown @command="handleCommand" trigger="click">
-            <div class="user-info" style="cursor: pointer;"><span class="user-name text-sm font-medium">{{ userName }}</span><el-tag size="small" type="info" effect="plain">{{ userRole }}</el-tag></div>
+            <div class="user-info" tabindex="0" style="cursor: pointer;"><span class="user-name text-sm font-medium">{{ userName }}</span><el-tag size="small" type="info" effect="plain">{{ roleLabel }}</el-tag></div>
             <template #dropdown><el-dropdown-menu><el-dropdown-item command="profile" class="text-sm">个人中心</el-dropdown-item><el-dropdown-item command="logout" divided style="color: var(--danger);" class="text-sm">退出登录</el-dropdown-item></el-dropdown-menu></template>
           </el-dropdown>
         </div>
       </header>
 
+      <el-drawer v-model="mobileMenuVisible" title="功能导航" direction="ltr" size="min(82vw, 320px)" class="mobile-nav-drawer">
+        <el-menu :default-active="activeMenu" @select="handleMenuSelect">
+          <el-menu-item v-for="item in navItems" :key="item.key" :index="item.key">{{ item.label }}<el-badge v-if="item.key === 'chat' && globalUnreadCount" :value="globalUnreadCount" :max="99" class="nav-badge" /></el-menu-item>
+        </el-menu>
+      </el-drawer>
+
       <main class="main-content">
         <div v-if="activeMenu === 'home'">
+          <section class="welcome-panel">
+            <div><span class="eyebrow">校园学习中心</span><h2>你好，{{ userName || '同学' }}</h2><p>{{ userRole === 'STUDENT' ? '从今天的课程开始，安排好每一步学习。' : userRole === 'TEACHER' ? '课程、学生与教学进展，尽在这里。' : '查看全校课程与资源，开启今天的管理工作。' }}</p></div>
+            <div class="welcome-count" v-if="userRole === 'STUDENT'"><strong>{{ activeMySchedule.length }}</strong><span>门在修课程</span></div>
+            <div class="welcome-count" v-else-if="userRole === 'TEACHER'"><strong>{{ activeMyCourses.length }}</strong><span>门授课课程</span></div>
+          </section>
           <el-row :gutter="24">
             <el-col :span="userRole === 'STUDENT' ? 16 : 24">
-              <el-carousel height="260px" class="dashboard-carousel">
-                <el-empty v-if="dynamicBanners.length === 0" description="暂未配置轮播图" style="background: rgba(255,255,255,0.8);" />
+              <el-carousel v-if="dynamicBanners.length" height="260px" class="dashboard-carousel">
                 <el-carousel-item v-for="banner in dynamicBanners" :key="banner.id">
                   <div class="banner-content" :style="{ backgroundImage: banner.imageBase64 ? `url(${banner.imageBase64})` : 'linear-gradient(135deg, #18181b 0%, #27272a 100%)', backgroundSize: 'cover', backgroundPosition: 'center' }">
                     <div class="banner-mask">
@@ -87,15 +78,17 @@
                   </div>
                 </el-carousel-item>
               </el-carousel>
+              <div v-else class="empty-banner"><span class="eyebrow">校园公告</span><h3>欢迎使用智能教务系统</h3><p>课程、课表与校园动态，都可以在这里轻松查看。</p></div>
             </el-col>
             <el-col :span="8" v-if="userRole === 'STUDENT'">
               <el-card class="recommend-panel" style="height: 260px;">
-                <div class="card-header" style="margin-bottom: var(--space-3);"><h3 class="text-h3">AI 猜你喜欢</h3></div>
+                <div class="card-header" style="margin-bottom: var(--space-3);"><h3 class="text-h3">选修推荐</h3></div>
                 <div class="recommend-scroll">
+                  <el-empty v-if="recommendList.length === 0" description="暂无可选课程" :image-size="80" />
                   <div v-for="item in recommendList" :key="item.id" class="recommend-mini-card" @click="showDetail(item.id)">
                     <div class="text-body font-medium" style="margin-bottom: var(--space-1);">{{ item.title }}</div>
                     <div class="text-xs" style="margin-bottom: var(--space-2);">{{ item.courseTime }} &middot; {{ item.teacher }}</div>
-                    <el-button v-if="(item.courseType || item.course_type) !== 'REQUIRED'" size="small" style="width: 100%;" @click.stop="handleEnroll(item.id)">选修此课</el-button>
+                    <el-button v-if="(item.courseType || item.course_type) !== 'REQUIRED'" size="small" style="width: 100%;" :disabled="isEnrolled(item.id)" :loading="enrollingCourseId === item.id" @click.stop="handleEnroll(item.id)">{{ isEnrolled(item.id) ? '已加入课表' : '选修此课' }}</el-button>
                   </div>
                 </div>
               </el-card>
@@ -167,8 +160,9 @@
 
         <div v-if="activeMenu === 'hall' && userRole === 'STUDENT'">
           <el-card>
-            <div class="card-header"><div><h3 class="text-h3">选课大厅</h3><p class="text-sm">点击课程名称可查看详细介绍与教材</p></div></div>
-            <el-table :data="tableData">
+            <div class="card-header"><div><h3 class="text-h3">选课大厅</h3><p class="text-sm">搜索课程，点击名称查看课程详情与教材</p></div><span class="result-count">共 {{ filteredCourses.length }} 门课程</span></div>
+            <div class="course-toolbar"><el-input v-model="courseSearch" clearable placeholder="搜索课程名称、教师或地点" aria-label="搜索课程" /><el-select v-model="courseTypeFilter" aria-label="筛选课程类型"><el-option label="全部类型" value="ALL" /><el-option label="必修课" value="REQUIRED" /><el-option label="选修课" value="ELECTIVE" /></el-select></div>
+            <el-table class="desktop-course-table" :data="pagedCourses" v-loading="loadingCourseHall" empty-text="没有符合条件的课程，请尝试其他关键词">
               <el-table-column label="课程名称" min-width="180">
                 <template #default="scope">
                   <el-tag v-if="scope.row.status == 2" type="info" size="small" effect="plain" style="margin-right: var(--space-2);">已完结</el-tag>
@@ -181,11 +175,22 @@
               <el-table-column label="操作" width="120" align="center">
                 <template #default="scope">
                   <span v-if="scope.row.status == 2" class="text-xs">已结课</span>
-                  <el-button v-else-if="(scope.row.courseType || scope.row.course_type) !== 'REQUIRED'" size="small" @click="handleEnroll(scope.row.id)">选修此课</el-button>
+                  <el-button v-else-if="(scope.row.courseType || scope.row.course_type) !== 'REQUIRED'" size="small" :disabled="isEnrolled(scope.row.id)" :loading="enrollingCourseId === scope.row.id" @click="handleEnroll(scope.row.id)">{{ isEnrolled(scope.row.id) ? '已加入课表' : '选修此课' }}</el-button>
                   <span v-else class="text-xs">系统已排课</span>
                 </template>
               </el-table-column>
             </el-table>
+            <div class="mobile-course-list" v-loading="loadingCourseHall">
+              <el-empty v-if="pagedCourses.length === 0" description="没有符合条件的课程" />
+              <article v-for="course in pagedCourses" :key="course.id" class="mobile-course-card">
+                <div class="mobile-course-meta"><el-tag :type="(course.courseType || course.course_type) === 'REQUIRED' ? 'danger' : 'success'" size="small" effect="plain">{{ (course.courseType || course.course_type) === 'REQUIRED' ? '必修' : '选修' }}</el-tag><el-tag v-if="course.status == 2" type="info" size="small" effect="plain">已完结</el-tag></div>
+                <button class="course-title-button" type="button" @click="showDetail(course.id)">{{ course.title }}</button>
+                <p>{{ course.semester || '学期未定' }} · {{ course.teacher || '教师待定' }}</p>
+                <el-button v-if="course.status != 2 && (course.courseType || course.course_type) !== 'REQUIRED'" :disabled="isEnrolled(course.id)" :loading="enrollingCourseId === course.id" @click="handleEnroll(course.id)">{{ isEnrolled(course.id) ? '已加入课表' : '选修此课' }}</el-button>
+                <span v-else class="mobile-course-hint">{{ course.status == 2 ? '课程已结课' : '系统已排课' }}</span>
+              </article>
+            </div>
+            <el-pagination v-if="filteredCourses.length > coursePageSize" v-model:current-page="coursePage" :page-size="coursePageSize" :total="filteredCourses.length" layout="prev, pager, next" class="course-pagination" />
           </el-card>
         </div>
 
@@ -252,7 +257,7 @@
         <div v-if="activeMenu === 'teacherGrades' && userRole === 'TEACHER'"><el-card><div class="card-header"><div><h3 class="text-h3">成绩录入与归档</h3></div></div><el-table :data="myCourseList.filter(c => c.status == 2)" v-loading="loadingCourses"><template #empty><el-empty description="暂无已完结的课程" /></template><el-table-column prop="semester" label="开课学期" width="180" align="center" /><el-table-column prop="title" label="已完结课程名称" /><el-table-column label="操作" width="180" align="center"><template #default="scope"><el-button type="primary" size="small" @click="viewStudents(scope.row.id, true)">进入录分通道</el-button></template></el-table-column></el-table></el-card></div>
         <div v-if="activeMenu === 'teacherQuality' && userRole === 'TEACHER'"><el-card><div class="card-header"><div><h3 class="text-h3">教学质量评估报告</h3></div></div><el-table :data="myCourseList.filter(c => c.status == 2)" v-loading="loadingCourses"><template #empty><el-empty description="需等待课程完结并有学生参与评价" /></template><el-table-column prop="semester" label="学期" width="150" align="center" /><el-table-column prop="title" label="课程名称" /><el-table-column label="操作" width="200" align="center"><template #default="scope"><el-button type="default" size="small" @click="viewEvalStats(scope.row)">查看报告</el-button></template></el-table-column></el-table></el-card></div>
 
-        <div v-if="activeMenu === 'forum'"><div class="forum-header-bar"><el-input v-model="forumSearchKeyword" placeholder="搜索帖子..." size="large" style="width: 400px; border-radius: var(--radius-md);" @keyup.enter="loadForumData"><template #append><el-button @click="loadForumData">搜索</el-button></template></el-input><el-button type="primary" size="large" @click="openPostDialog">{{ userRole === 'ADMIN' ? '发布公告' : '发布动态' }}</el-button></div><div class="forum-container" v-loading="loadingForum"><el-empty v-if="forumList.length === 0" description="暂无帖子" /><el-card v-for="post in forumList" :key="post.id" class="forum-post-card"><div class="post-header"><el-avatar :size="40" :style="{ background: post.authorUsername === 'admin' ? 'var(--primary)' : 'var(--border)', color: post.authorUsername === 'admin' ? 'white' : 'var(--foreground)' }">{{ post.authorName ? post.authorName.substring(0,1) : 'U' }}</el-avatar><div class="post-meta"><div class="post-author"><el-tag v-if="post.authorUsername === 'admin' || post.authorName.includes('管理员')" type="info" size="small" effect="plain" style="margin-right: var(--space-2);">官方</el-tag><span class="text-body font-medium">{{ post.authorName }}</span></div><div class="text-xs" style="margin-top: var(--space-1);">{{ post.createTime ? post.createTime.replace('T', ' ') : '刚刚' }}</div></div></div><div class="post-body"><div class="text-body" style="white-space: pre-wrap; margin-bottom: var(--space-3);">{{ post.content }}</div><img v-if="post.imageBase64" :src="post.imageBase64" class="post-image" alt="帖子图片" /></div><div class="post-footer"><div class="post-actions"><el-button type="default" size="small" @click="handleLikePost(post.id)">👍 <span v-if="post.likes > 0">{{ post.likes }}</span><span v-else>点赞</span></el-button><el-button type="danger" size="small" plain style="margin-left: var(--space-3);" v-if="userRole === 'ADMIN'" @click="handleDeletePost(post.id)">强制下架</el-button></div><div class="comments-section" v-if="post.comments && post.comments.length > 0"><div v-for="c in post.comments" :key="c.id" class="comment-item"><span class="text-sm font-medium">{{ c.authorName }}: </span><span class="text-sm">{{ c.content }}</span></div></div><div class="comment-input-box" v-if="userRole !== 'ADMIN'"><el-input v-model="post.newCommentInput" size="small" placeholder="写下你的评论..." @keyup.enter="submitComment(post)" /><el-button size="small" plain @click="submitComment(post)" style="margin-left: var(--space-2);">发送</el-button></div></div></el-card></div></div>
+        <div v-if="activeMenu === 'forum'"><div class="forum-header-bar"><el-input v-model="forumSearchKeyword" placeholder="搜索帖子..." size="large" style="width: 400px; border-radius: var(--radius-md);" @keyup.enter="loadForumData"><template #append><el-button @click="loadForumData">搜索</el-button></template></el-input><el-button type="primary" size="large" @click="openPostDialog">{{ userRole === 'ADMIN' ? '发布公告' : '发布动态' }}</el-button></div><div class="forum-container" v-loading="loadingForum"><el-empty v-if="forumList.length === 0" description="暂无帖子" /><el-card v-for="post in forumList" :key="post.id" class="forum-post-card"><div class="post-header"><el-avatar :size="40" :style="{ background: post.authorUsername === 'admin' ? 'var(--primary)' : 'var(--border)', color: post.authorUsername === 'admin' ? 'white' : 'var(--foreground)' }">{{ post.authorName ? post.authorName.substring(0,1) : 'U' }}</el-avatar><div class="post-meta"><div class="post-author"><el-tag v-if="post.authorUsername === 'admin' || post.authorName?.includes('管理员')" type="info" size="small" effect="plain" style="margin-right: var(--space-2);">官方</el-tag><span class="text-body font-medium">{{ post.authorName }}</span></div><div class="text-xs" style="margin-top: var(--space-1);">{{ post.createTime ? post.createTime.replace('T', ' ') : '刚刚' }}</div></div></div><div class="post-body"><div class="text-body" style="white-space: pre-wrap; margin-bottom: var(--space-3);">{{ post.content }}</div><img v-if="post.imageBase64" :src="post.imageBase64" class="post-image" alt="帖子图片" /></div><div class="post-footer"><div class="post-actions"><el-button type="default" size="small" @click="handleLikePost(post.id)">👍 <span v-if="post.likes > 0">{{ post.likes }}</span><span v-else>点赞</span></el-button><el-button type="danger" size="small" plain style="margin-left: var(--space-3);" v-if="userRole === 'ADMIN'" @click="handleDeletePost(post.id)">强制下架</el-button></div><div class="comments-section" v-if="post.comments && post.comments.length > 0"><div v-for="c in post.comments" :key="c.id" class="comment-item"><span class="text-sm font-medium">{{ c.authorName }}: </span><span class="text-sm">{{ c.content }}</span></div></div><div class="comment-input-box" v-if="userRole !== 'ADMIN'"><el-input v-model="post.newCommentInput" size="small" placeholder="写下你的评论..." @keyup.enter="submitComment(post)" /><el-button size="small" plain @click="submitComment(post)" style="margin-left: var(--space-2);">发送</el-button></div></div></el-card></div></div>
         
         <div v-if="activeMenu === 'ai' && userRole === 'STUDENT'"><el-card style="height: calc(100vh - 160px); display: flex; flex-direction: column;"><div class="card-header"><h3 class="text-h3">专属 AI 助手</h3></div><div class="ai-chat-container"><div class="chat-history" ref="aiChatBox"><div v-for="(msg, index) in aiChatHistory" :key="index" class="p2p-message-row" :class="msg.role === 'user' ? 'p2p-msg-right' : 'p2p-msg-left'"><el-avatar v-if="msg.role === 'ai'" :size="40" style="background:var(--primary); color:white; margin-right:var(--space-3); flex-shrink: 0;">AI</el-avatar><div class="p2p-bubble text-body" :class="msg.role === 'user' ? 'my-bubble' : 'their-bubble'" style="white-space: pre-wrap;">{{ msg.content }}</div><el-avatar v-if="msg.role === 'user'" :size="40" style="background:var(--success); color:white; margin-left:var(--space-3); flex-shrink: 0;">{{ userName ? userName.substring(0,1) : '我' }}</el-avatar></div><div v-if="aiLoading" class="p2p-message-row p2p-msg-left"><el-avatar :size="40" style="background:var(--primary); color:white; margin-right:var(--space-3);">AI</el-avatar><div class="p2p-bubble their-bubble text-sm">思考中... ⏳</div></div></div><div class="chat-input-area"><el-input v-model="userInput" size="large" @keyup.enter="askAI" placeholder="试试向我提问..."><template #append><el-button @click="askAI" :loading="aiLoading">发送</el-button></template></el-input></div></div></el-card></div>
 
@@ -301,14 +306,14 @@
     <el-dialog v-model="evalDialogVisible" title="课程质量评估" width="600px" append-to-body><div class="eval-question"><p class="text-sm font-medium">1. 备课与熟练度</p><el-radio-group v-model="evalForm.q1"><el-radio :label="20">非常满意</el-radio><el-radio :label="16">满意</el-radio><el-radio :label="12">一般</el-radio><el-radio :label="8">不满意</el-radio><el-radio :label="4">极差</el-radio></el-radio-group></div><div class="eval-question"><p class="text-sm font-medium">2. 逻辑与重点</p><el-radio-group v-model="evalForm.q2"><el-radio :label="20">非常满意</el-radio><el-radio :label="16">满意</el-radio><el-radio :label="12">一般</el-radio><el-radio :label="8">不满意</el-radio><el-radio :label="4">极差</el-radio></el-radio-group></div><div class="eval-question"><p class="text-sm font-medium">3. 课堂氛围</p><el-radio-group v-model="evalForm.q3"><el-radio :label="20">非常满意</el-radio><el-radio :label="16">满意</el-radio><el-radio :label="12">一般</el-radio><el-radio :label="8">不满意</el-radio><el-radio :label="4">极差</el-radio></el-radio-group></div><div class="eval-question"><p class="text-sm font-medium">4. 课后辅导</p><el-radio-group v-model="evalForm.q4"><el-radio :label="20">非常满意</el-radio><el-radio :label="16">满意</el-radio><el-radio :label="12">一般</el-radio><el-radio :label="8">不满意</el-radio><el-radio :label="4">极差</el-radio></el-radio-group></div><div class="eval-question"><p class="text-sm font-medium">5. 总体收获</p><el-radio-group v-model="evalForm.q5"><el-radio :label="20">非常满意</el-radio><el-radio :label="16">满意</el-radio><el-radio :label="12">一般</el-radio><el-radio :label="8">不满意</el-radio><el-radio :label="4">极差</el-radio></el-radio-group></div><div class="eval-question" style="margin-top: var(--space-4);"><p class="text-sm font-medium">匿名改进建议</p><el-input type="textarea" v-model="evalForm.suggestion" :rows="3" placeholder="写下建议..."></el-input></div><template #footer><div style="display:flex; justify-content: space-between; align-items: center;"><span class="text-sm">总分：<strong class="text-h3">{{ totalEvalScore }}</strong></span><div><el-button @click="evalDialogVisible = false">取消</el-button><el-button type="primary" @click="submitEvaluation">提交评价</el-button></div></div></template></el-dialog>
     <el-dialog v-model="evalStatsDialogVisible" title="评教报告" width="600px" append-to-body><div v-loading="loadingStats"><div class="score-board"><div class="text-sm" style="opacity: 0.8">平均分</div><div class="text-h1">{{ evalStatsData.avgScore }}</div></div><h4 class="text-h3" style="margin-top: var(--space-6); margin-bottom: var(--space-3);">匿名反馈</h4><div v-if="evalStatsData.suggestions.length > 0" class="suggestion-list"><div v-for="(sug, index) in evalStatsData.suggestions" :key="index" class="suggestion-item text-sm"><span style="color:var(--muted-foreground)">匿名：</span> {{ sug }}</div></div><el-empty v-else description="暂无建议" /></div></el-dialog>
     
-    <el-dialog v-model="addCourseDialogVisible" :title="isEditingCourse ? '修改课程' : '发布新课程'" width="600px" append-to-body><el-form :model="newCourseForm" label-width="90px"><el-form-item label="课程名称"><el-input v-model="newCourseForm.title" placeholder="如：高等数学" /></el-form-item><el-row :gutter="24"><el-col :span="12"><el-form-item label="开课学期"><el-select v-model="newCourseForm.semester"><el-option label="2025-2026春季" value="2025-2026春季"></el-option><el-option label="2025-2026秋季" value="2025-2026秋季"></el-option></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="课程类型"><el-select v-model="newCourseForm.courseType"><el-option label="必修课" value="REQUIRED"></el-option><el-option label="选修课" value="ELECTIVE"></el-option></el-select></el-form-item></el-col></el-row><el-form-item label="目标专业" v-if="newCourseForm.courseType === 'REQUIRED'"><el-input v-model="newCourseForm.targetMajor" placeholder="如：软件工程" /></el-form-item><el-form-item label="上课时间"><el-input v-model="newCourseForm.courseTime" placeholder="如：2-10周 周二 3-4节" /></el-form-item><el-form-item label="上课地点"><el-input v-model="newCourseForm.location" placeholder="如：教一201" /></el-form-item><el-form-item label="所需教材"><el-input v-model="newCourseForm.textbook" placeholder="如：同济大学第七版 高等数学" /></el-form-item><el-form-item label="课程介绍"><el-input type="textarea" v-model="newCourseForm.introduction" :rows="3" placeholder="简单介绍一下这门课的内容与考核方式..." /></el-form-item></el-form><template #footer><el-button @click="addCourseDialogVisible=false">取消</el-button><el-button type="primary" @click="submitCourseForm">立即发布</el-button></template></el-dialog>
+    <el-dialog v-model="addCourseDialogVisible" :title="isEditingCourse ? '修改课程' : '发布新课程'" width="600px" append-to-body><el-form :model="newCourseForm" label-width="90px"><el-form-item label="课程名称"><el-input v-model="newCourseForm.title" placeholder="如：高等数学" /></el-form-item><el-row :gutter="24"><el-col :span="12"><el-form-item label="开课学期"><el-select v-model="newCourseForm.semester"><el-option v-for="semester in semesterOptions" :key="semester" :label="semester" :value="semester" /></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="课程类型"><el-select v-model="newCourseForm.courseType"><el-option label="必修课" value="REQUIRED"></el-option><el-option label="选修课" value="ELECTIVE"></el-option></el-select></el-form-item></el-col></el-row><el-form-item label="目标专业" v-if="newCourseForm.courseType === 'REQUIRED'"><el-input v-model="newCourseForm.targetMajor" placeholder="如：软件工程" /></el-form-item><el-form-item label="上课时间"><el-input v-model="newCourseForm.courseTime" placeholder="如：2-10周 周二 3-4节" /></el-form-item><el-form-item label="上课地点"><el-input v-model="newCourseForm.location" placeholder="如：教一201" /></el-form-item><el-form-item label="所需教材"><el-input v-model="newCourseForm.textbook" placeholder="如：同济大学第七版 高等数学" /></el-form-item><el-form-item label="课程介绍"><el-input type="textarea" v-model="newCourseForm.introduction" :rows="3" placeholder="简单介绍一下这门课的内容与考核方式..." /></el-form-item></el-form><template #footer><el-button @click="addCourseDialogVisible=false">取消</el-button><el-button type="primary" @click="submitCourseForm">{{ isEditingCourse ? '保存修改' : '立即发布' }}</el-button></template></el-dialog>
     <el-dialog v-model="dialogVisible" :title="isGradeMode ? '录入成绩' : '学生名单'" width="800px" append-to-body><div v-if="userRole === 'TEACHER' && !isGradeMode" class="bulk-msg-box" style="margin-bottom: var(--space-4);"><h4 class="text-sm font-medium" style="margin: 0 0 var(--space-2) 0;">发通知</h4><el-input type="textarea" v-model="bulkMessageText" :rows="2"></el-input><el-button type="default" size="small" style="margin-top: var(--space-2);" @click="sendBulkMessage">发送</el-button></div><el-table :data="studentList" height="400"><el-table-column prop="userNo" label="学号" width="120" /><el-table-column prop="name" label="姓名" width="100" /><el-table-column prop="major" label="专业" width="120" /><el-table-column prop="className" label="班级" width="120" /><el-table-column label="期末成绩" width="180" align="center" v-if="isGradeMode"><template #default="scope"><div style="display:flex; gap:var(--space-2);"><el-input-number v-model="scope.row.grade" :min="0" :max="100" size="small" style="width: 100px;" /><el-button type="primary" size="small" @click="saveGrade(scope.row)">保存</el-button></div></template></el-table-column></el-table></el-dialog>
     <el-dialog v-model="profileDialogVisible" title="个人中心" width="450px" append-to-body><el-form :model="profileForm" label-width="80px" v-loading="loadingProfile"><el-form-item label="姓名"><el-input v-model="profileForm.name" /></el-form-item><el-form-item label="学/工号"><el-input v-model="profileForm.userNo" disabled /></el-form-item><el-form-item label="所属专业" v-if="userRole === 'STUDENT'"><el-input v-model="profileForm.major" /></el-form-item><el-form-item label="所在班级" v-if="userRole === 'STUDENT'"><el-input v-model="profileForm.className" /></el-form-item><el-form-item label="联系电话"><el-input v-model="profileForm.phone" /></el-form-item><el-form-item label="登录密码"><el-input v-model="profileForm.password" type="password" show-password placeholder="不修改请留空" /></el-form-item><el-form-item label="个人介绍" v-if="userRole === 'TEACHER'"><el-input type="textarea" v-model="profileForm.intro" :rows="3" /></el-form-item></el-form><template #footer><el-button @click="profileDialogVisible=false">取消</el-button><el-button type="primary" @click="submitProfileUpdate">保存</el-button></template></el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick, onUnmounted, computed } from 'vue'
+import { ref, reactive, onMounted, nextTick, onUnmounted, computed, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -321,14 +326,35 @@ axios.interceptors.request.use(config => {
 // 统一 API 地址：默认本地后端，部署时可通过 VITE_API_BASE_URL 覆盖
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 axios.defaults.timeout = 20000
+axios.interceptors.response.use(response => response, error => {
+  if (error.response?.status === 401) {
+    localStorage.removeItem('token')
+    window.location.reload()
+  }
+  return Promise.reject(error)
+})
 
 const isLoggedIn = ref(!!localStorage.getItem('token'))
 const userRole = ref(''); const userName = ref(''); const loginUsername = ref(''); const myUserId = ref(null)
-const isRegisterMode = ref(false); const isResetMode = ref(false); const activeMenu = ref('home')
+const isRegisterMode = ref(false); const isResetMode = ref(false); const activeMenu = ref('home'); const mobileMenuVisible = ref(false)
+const roleLabel = computed(() => ({ STUDENT: '学生', TEACHER: '教师', ADMIN: '管理员' })[userRole.value] || userRole.value)
+const navItems = computed(() => {
+  const common = [{ key: 'home', label: '首页' }]
+  const roleMenus = {
+    STUDENT: [['hall', '选课大厅'], ['my', '课表管理'], ['studentGrades', '成绩查询'], ['studentAttendance', '考勤记录'], ['studentEval', '教学评估'], ['ai', 'AI 助手']],
+    TEACHER: [['teacherCourses', '授课管理'], ['teacherGrades', '成绩录入'], ['teacherQuality', '教学质量']],
+    ADMIN: [['adminUsers', '账号管理'], ['adminCourses', '全局课程'], ['adminClassrooms', '教室管理'], ['adminBanners', '轮播图配置']]
+  }
+  const items = common.concat((roleMenus[userRole.value] || []).map(([key, label]) => ({ key, label })))
+  if (userRole.value !== 'ADMIN') items.push({ key: 'reserveClassroom', label: '空教室预约' })
+  items.push({ key: 'forum', label: '讨论论坛' })
+  if (userRole.value !== 'ADMIN') items.push({ key: 'chat', label: '师生交流' })
+  return items
+})
 
-const parseToken = () => { try { const t = localStorage.getItem('token'); if(!t) return; const p = JSON.parse(atob(t.split('.')[1])); userRole.value = p.role.toUpperCase(); userName.value = p.name || p.username; loginUsername.value = p.username; } catch(e){} }
+const parseToken = () => { try { const t = localStorage.getItem('token'); if(!t) return; const p = JSON.parse(atob(t.split('.')[1])); if (p.exp * 1000 <= Date.now()) throw new Error('expired'); userRole.value = p.role.toUpperCase(); userName.value = p.name || p.username; loginUsername.value = p.username; } catch(e){ localStorage.removeItem('token'); isLoggedIn.value = false } }
 const registerForm = reactive({ role: 'STUDENT', username: '', password: '', name: '', userNo: '', phone: '', intro: '', major: '', className: '' })
-const loginForm = reactive({ username: '', password: '' }); const isLoggingIn = ref(false); const resetForm = reactive({ username: '', phone: '', newPassword: '' }); const isResetting = ref(false)
+const loginForm = reactive({ username: '', password: '' }); const isLoggingIn = ref(false); const isRegistering = ref(false); const resetForm = reactive({ username: '', phone: '', newPassword: '' }); const isResetting = ref(false)
 
 const handleLogin = async () => {
   if(!loginForm.username){ ElMessage.warning('请输入账号'); return }
@@ -343,13 +369,17 @@ const handleLogin = async () => {
 }
 const handleRegister = async () => {
   if(!registerForm.username || !registerForm.password || !registerForm.name || !registerForm.userNo){ ElMessage.warning('请填写完整的账号、密码、姓名和学工号'); return }
+  if (registerForm.password.length < 8) return ElMessage.warning('密码至少需要 8 位')
+  isRegistering.value = true
   try {
     const res = await axios.post('/auth/register', registerForm)
     if(res.data.code===200){ ElMessage.success('注册成功'); isRegisterMode.value=false } else ElMessage.error(res.data.message || '注册失败')
   } catch(e) { ElMessage.error('注册失败，请稍后重试') }
+  finally { isRegistering.value = false }
 }
 const handleResetPassword = async () => {
   if(!resetForm.username || !resetForm.phone || !resetForm.newPassword){ ElMessage.warning('请填写完整信息'); return }
+  if (resetForm.newPassword.length < 8) return ElMessage.warning('新密码至少需要 8 位')
   isResetting.value = true
   try {
     const res = await axios.post('/auth/resetPassword', resetForm)
@@ -357,12 +387,14 @@ const handleResetPassword = async () => {
   } catch(e) { ElMessage.error('重置失败，请稍后重试') }
   finally { isResetting.value=false }
 }
-const handleLogout = () => { localStorage.removeItem('token'); isLoggedIn.value=false; activeMenu.value='home'; clearChatTimer(); clearGlobalTimer(); ElMessage.success('已退出') }
+const handleLogout = () => { localStorage.removeItem('token'); isLoggedIn.value=false; activeMenu.value='home'; mobileMenuVisible.value=false; clearChatTimer(); clearGlobalTimer(); ElMessage.success('已退出') }
 
 const handleMenuSelect = (index) => { 
+  mobileMenuVisible.value = false
+  if (activeMenu.value === index) return
   activeMenu.value = index; if (index !== 'chat') clearChatTimer(); 
-  if (index === 'hall' || index === 'home') fetchCourses(); 
-  if (index === 'my' || index === 'home') loadMySchedule(); 
+  if (index === 'hall' && !tableData.value.length) fetchCourses();
+  if (index === 'my') loadMySchedule();
   if (index === 'adminCourses') loadAdminCourses(); 
   if (index === 'teacherCourses' || index === 'teacherGrades' || index === 'teacherQuality') loadMyCourses(); 
   if (index === 'chat') fetchContacts();
@@ -399,18 +431,19 @@ const openReserveDialog = (roomName) => { reserveForm.roomName = roomName; reser
 const submitReserve = async () => {
   if(!reserveForm.purpose.trim()) return ElMessage.warning('请填写使用用途！');
   try {
-    await axios.post('/classroom/reserve', {
+    const res = await axios.post('/classroom/reserve', {
       roomName: reserveForm.roomName,
       applicantName: userName.value,
       reserveDate: reserveDate.value,
       timeSlot: reserveSlot.value, // 使用 ID
       purpose: reserveForm.purpose
     });
+    if (res.data.code !== 200) return ElMessage.error(res.data.message || '预约失败')
     ElMessage.success('预约成功！');
     reserveDialogVisible.value = false;
     searchEmptyRooms(); 
     loadMyReservations();
-  } catch(e){}
+  } catch(e){ ElMessage.error('预约失败，请稍后重试') }
 }
 const loadMyReservations = async () => { try { const res = await axios.get(`/classroom/myReservations?applicantName=${userName.value}`); if(res.data.code === 200) myReservationList.value = res.data.data; } catch(e){} }
 
@@ -471,7 +504,7 @@ const showDetail = async (id) => {
 // ================= 其它系统逻辑保持稳定 =================
 const attendanceDialogVisible = ref(false); const attendanceDate = ref(new Date().toISOString().split('T')[0]); const currentAttendanceCourseId = ref(null); const attendanceStudentList = ref([]); const myAttendanceList = ref([]); const loadingAttendance = ref(false);
 const openAttendanceDialog = async (courseId) => { currentAttendanceCourseId.value = courseId; attendanceDate.value = new Date().toISOString().split('T')[0]; try { const res = await axios.get(`/enroll/students?courseId=${courseId}`); if (res.data.code === 200) { attendanceStudentList.value = (res.data.data || []).map(s => ({ ...s, attendanceStatus: 'PRESENT' })); attendanceDialogVisible.value = true; } } catch(e) {} }
-const submitAttendance = async () => { if(!attendanceDate.value) return ElMessage.warning('请选择日期'); const records = attendanceStudentList.value.map(s => ({ courseId: currentAttendanceCourseId.value, studentId: s.studentId || s.id, recordDate: attendanceDate.value, status: s.attendanceStatus })); try { await axios.post('/enroll/submitAttendance', records); ElMessage.success('考勤录入成功'); attendanceDialogVisible.value = false; } catch(e) { ElMessage.error('失败'); } }
+const submitAttendance = async () => { if(!attendanceDate.value) return ElMessage.warning('请选择日期'); const records = attendanceStudentList.value.map(s => ({ courseId: currentAttendanceCourseId.value, studentId: s.studentId || s.id, recordDate: attendanceDate.value, status: s.attendanceStatus })); try { const res = await axios.post('/enroll/submitAttendance', records); if (res.data.code === 200) { ElMessage.success('考勤录入成功'); attendanceDialogVisible.value = false } else ElMessage.error(res.data.message || '考勤录入失败') } catch(e) { ElMessage.error('考勤录入失败，请稍后重试') } }
 const loadMyAttendance = async () => { loadingAttendance.value = true; try { const res = await axios.get(`/enroll/myAttendance?studentId=${myUserId.value}`); if (res.data.code === 200) myAttendanceList.value = res.data.data || []; } catch(e) {} finally { loadingAttendance.value = false; } }
 
 const dynamicBanners = ref([]); const adminBannerList = ref([]); const bannerDialogVisible = ref(false); const bannerFileInput = ref(null); const bannerForm = reactive({ id: null, title: '', sub: '', imageBase64: '' });
@@ -490,35 +523,52 @@ const openAddUserDialog = () => { Object.keys(adminAddUserForm).forEach(k => adm
 const submitAdminAddUser = async () => { if(!adminAddUserForm.username || !adminAddUserForm.password) return ElMessage.warning("必填"); try { const res = await axios.post('/auth/register', adminAddUserForm); if(res.data.code === 200) { ElMessage.success('新增成功'); addUserDialogVisible.value = false; loadAdminUsers(); } else ElMessage.error(res.data.message); } catch(e) {} }
 const handleDeleteUser = async (id) => { ElMessageBox.confirm('确定要注销该账号吗？', '警告', {type: 'error'}).then(async () => { try { await axios.post(`/admin/deleteUser?id=${id}`); ElMessage.success('已注销'); loadAdminUsers(); } catch(e) {} }).catch(()=>{}); }
 
-const tableData = ref([]); const myScheduleList = ref([]); const adminCourseList = ref([]); const myCourseList = ref([]); const recommendList = ref([]); const loadingSchedule = ref(false); const loadingCourses = ref(false);
+const tableData = ref([]); const myScheduleList = ref([]); const adminCourseList = ref([]); const myCourseList = ref([]); const loadingSchedule = ref(false); const loadingCourses = ref(false);
+const loadingCourseHall = ref(false); const courseSearch = ref(''); const courseTypeFilter = ref('ALL'); const coursePage = ref(1); const coursePageSize = 10
+const filteredCourses = computed(() => {
+  const keyword = courseSearch.value.trim().toLocaleLowerCase()
+  return tableData.value.filter(course => {
+    const type = course.courseType || course.course_type || 'ELECTIVE'
+    return (courseTypeFilter.value === 'ALL' || type === courseTypeFilter.value) &&
+      (!keyword || [course.title, course.teacher, course.location].some(value => String(value || '').toLocaleLowerCase().includes(keyword)))
+  })
+})
+const pagedCourses = computed(() => filteredCourses.value.slice((coursePage.value - 1) * coursePageSize, coursePage.value * coursePageSize))
+watch([courseSearch, courseTypeFilter], () => { coursePage.value = 1 })
 // 预计算未退课的课程列表，避免在课表矩阵每个单元格重复 filter
 const activeMySchedule = computed(() => myScheduleList.value.filter(c => c.status != 2))
 const activeMyCourses = computed(() => myCourseList.value.filter(c => c.status != 2))
-const fetchCourses = async () => { try { const res = await axios.get('/course/list'); if(res.data.code===200) tableData.value = res.data.data || [] } catch(e){} }
-const fetchRecommendCourses = async () => { try { const res = await axios.get('/course/recommend'); if(res.data.code===200) recommendList.value = res.data.data || [] } catch(e){} }
+const enrolledCourseIds = computed(() => new Set(myScheduleList.value.map(course => course.id)))
+const isEnrolled = id => enrolledCourseIds.value.has(id)
+const recommendList = computed(() => tableData.value.filter(course => (course.courseType || course.course_type) !== 'REQUIRED' && course.status != 2 && !isEnrolled(course.id)).slice(0, 3))
+const enrollingCourseId = ref(null)
+const fetchCourses = async () => { loadingCourseHall.value = true; try { const res = await axios.get('/course/list'); if(res.data.code===200) tableData.value = res.data.data || []; else ElMessage.error(res.data.message || '课程加载失败') } catch(e){ ElMessage.error('课程加载失败，请稍后重试') } finally { loadingCourseHall.value = false } }
 const loadMySchedule = async () => { loadingSchedule.value = true; try { const res = await axios.get(`/enroll/my`, {params:{username:loginUsername.value}}); if(res.data.code===200) myScheduleList.value = res.data.data || [] } catch(e){} finally { loadingSchedule.value = false } }
-const handleEnroll = async (id) => { try { const res = await axios.post(`/enroll/submit`, null, {params:{username:loginUsername.value, courseId:id}}); if(res.data.code===200) {ElMessage.success('选课成功'); loadMySchedule() } else ElMessage.error(res.data.message) } catch(e){} }
-const handleDrop = async (id) => { try { const res = await axios.post(`/enroll/drop`, null, {params:{username:loginUsername.value, courseId:id}}); if(res.data.code===200){ ElMessage.success('退课成功'); loadMySchedule() } } catch(e){} }
+const handleEnroll = async (id) => { if (enrollingCourseId.value || isEnrolled(id)) return; enrollingCourseId.value = id; try { const res = await axios.post('/enroll/submit', null, {params:{username:loginUsername.value, courseId:id}}); if(res.data.code===200) { ElMessage.success('选课成功'); await loadMySchedule() } else ElMessage.error(res.data.message || '选课失败') } catch(e){ ElMessage.error('选课失败，请稍后重试') } finally { enrollingCourseId.value = null } }
+const handleDrop = async (id) => { try { await ElMessageBox.confirm('退课后需要重新选课才能恢复，确定继续吗？', '确认退课', { type: 'warning' }); const res = await axios.post('/enroll/drop', null, {params:{username:loginUsername.value, courseId:id}}); if(res.data.code===200){ ElMessage.success('退课成功'); await loadMySchedule() } else ElMessage.error(res.data.message || '退课失败') } catch(e){ if (e !== 'cancel' && e !== 'close') ElMessage.error('退课失败，请稍后重试') } }
 const loadAdminCourses = async () => { loadingCourses.value=true; try{ const res=await axios.get('/course/list'); if(res.data.code===200) adminCourseList.value = res.data.data || [] }catch(e){}finally{loadingCourses.value=false} }
 const loadMyCourses = async () => { loadingCourses.value=true; try{ const res=await axios.get(`/course/teacherList?username=${loginUsername.value}`); if(res.data.code===200) myCourseList.value = res.data.data || [] }catch(e){}finally{loadingCourses.value=false} }
-const handleComplete = async (id) => { ElMessageBox.confirm('结课后开放成绩录入通道。确认结课吗？', '提示').then(async () => { try { const res = await axios.post(`/course/complete?id=${id}`); if (res.data.code === 200) { ElMessage.success('结课成功'); loadMyCourses(); if (userRole.value === 'ADMIN') loadAdminCourses(); } } catch(e) {} }).catch(()=>{}) }
+const handleComplete = async (id) => { try { await ElMessageBox.confirm('结课后开放成绩录入通道。确认结课吗？', '确认结课'); const res = await axios.post('/course/complete', null, { params: { id } }); if (res.data.code === 200) { ElMessage.success('结课成功'); loadMyCourses() } else ElMessage.error(res.data.message || '结课失败') } catch(e) { if (e !== 'cancel' && e !== 'close') ElMessage.error('结课失败，请稍后重试') } }
 
-const addCourseDialogVisible = ref(false); const isEditingCourse = ref(false); const newCourseForm = reactive({ id: null, title: '', teacherId: '', credits: 2, maxCapacity: 50, courseTime: '', location: '', courseType: 'ELECTIVE', targetMajor: '', semester: '2025-2026春季', textbook: '', introduction: '' })
-const openAddCourseDialog = () => { isEditingCourse.value = false; Object.keys(newCourseForm).forEach(k => newCourseForm[k] = k==='semester'?'2025-2026春季':k==='courseType'?'ELECTIVE':k==='credits'?2:k==='maxCapacity'?50:''); addCourseDialogVisible.value = true; }
-const openEditCourse = (row) => { isEditingCourse.value = true; Object.assign(newCourseForm, row); addCourseDialogVisible.value = true; }
-const submitCourseForm = async () => { try{ const payload = { ...newCourseForm }; if (userRole.value === 'TEACHER') payload.teacherId = myUserId.value; const url = isEditingCourse.value ? '/course/update' : '/course/add'; const res = await axios.post(url, payload); if(res.data.code===200){ ElMessage.success('操作成功'); addCourseDialogVisible.value=false; if(userRole.value === 'TEACHER') loadMyCourses(); if(userRole.value === 'ADMIN') loadAdminCourses() } }catch(e){} }
-const handleDeleteCourse = async (id) => { ElMessageBox.confirm('确定删除吗？').then(async () => { try { await axios.post(`/course/delete?id=${id}`); ElMessage.success('已删除'); loadAdminCourses(); loadMyCourses() } catch(e){} }).catch(()=>{}) }
+const academicYear = new Date().getMonth() >= 7 ? new Date().getFullYear() : new Date().getFullYear() - 1
+const semesterOptions = [`${academicYear}-${academicYear + 1}秋季`, `${academicYear}-${academicYear + 1}春季`, `${academicYear + 1}-${academicYear + 2}秋季`]
+const defaultSemester = new Date().getMonth() >= 7 ? semesterOptions[0] : semesterOptions[1]
+const addCourseDialogVisible = ref(false); const isEditingCourse = ref(false); const newCourseForm = reactive({ id: null, title: '', teacherId: '', credits: 2, maxCapacity: 50, courseTime: '', location: '', courseType: 'ELECTIVE', targetMajor: '', semester: defaultSemester, textbook: '', introduction: '' })
+const openAddCourseDialog = () => { isEditingCourse.value = false; Object.keys(newCourseForm).forEach(k => newCourseForm[k] = k==='semester'?defaultSemester:k==='courseType'?'ELECTIVE':k==='credits'?2:k==='maxCapacity'?50:''); addCourseDialogVisible.value = true; }
+const openEditCourse = async (row) => { try { const res = await axios.get('/course/detail', { params: { courseId: row.id } }); if (res.data.code !== 200) return ElMessage.error(res.data.message || '课程详情加载失败'); isEditingCourse.value = true; Object.assign(newCourseForm, { id: null, title: '', teacherId: '', credits: 2, maxCapacity: 50, courseTime: '', location: '', courseType: 'ELECTIVE', targetMajor: '', semester: defaultSemester, textbook: '', introduction: '' }, res.data.data.course); addCourseDialogVisible.value = true } catch(e) { ElMessage.error('课程详情加载失败，请稍后重试') } }
+const submitCourseForm = async () => { if (!newCourseForm.title.trim()) return ElMessage.warning('请填写课程名称'); try{ const payload = { ...newCourseForm }; if (userRole.value === 'TEACHER') payload.teacherId = myUserId.value; const url = isEditingCourse.value ? '/course/update' : '/course/add'; const res = await axios.post(url, payload); if(res.data.code===200){ ElMessage.success('操作成功'); addCourseDialogVisible.value=false; if(userRole.value === 'TEACHER') loadMyCourses(); if(userRole.value === 'ADMIN') loadAdminCourses() } else ElMessage.error(res.data.message || '课程保存失败') }catch(e){ ElMessage.error('课程保存失败，请稍后重试') } }
+const handleDeleteCourse = async (id) => { try { await ElMessageBox.confirm('确定删除这门课程吗？已有学生选课时系统会阻止删除。', '确认删除', { type: 'warning' }); const res = await axios.post('/course/delete', null, { params: { id } }); if (res.data.code === 200) { ElMessage.success('已删除'); loadAdminCourses() } else ElMessage.error(res.data.message || '删除失败') } catch(e){ if (e !== 'cancel' && e !== 'close') ElMessage.error('删除失败，请稍后重试') } }
 
 const selectedSemester = ref('ALL'); const myGradeList = ref([]); const loadingGrades = ref(false);
 const studentList = ref([]); const dialogVisible = ref(false); const currentCourseIdForGrade = ref(null); const isGradeMode = ref(false);
 const loadMyGrades = async () => { loadingGrades.value = true; try { const res = await axios.get(`/enroll/myGrades`, { params: { username: loginUsername.value, semester: selectedSemester.value } }); if (res.data.code === 200) myGradeList.value = res.data.data || []; } catch(e) {} finally { loadingGrades.value = false; } }
 const viewStudents = async (id, isGrade) => { currentCourseIdForGrade.value = id; isGradeMode.value = isGrade; try{ const res=await axios.get(`/enroll/students?courseId=${id}`); if(res.data.code===200){ studentList.value = res.data.data || []; dialogVisible.value=true } }catch(e){} }
-const saveGrade = async (row) => { if (row.grade === null || row.grade === undefined) return; try { await axios.post('/enroll/updateGrade', null, { params: { courseId: currentCourseIdForGrade.value, studentId: row.studentId, grade: row.grade } }); ElMessage.success(`已保存`); } catch(e) {} }
+const saveGrade = async (row) => { if (row.grade === null || row.grade === undefined) return; try { const res = await axios.post('/enroll/updateGrade', null, { params: { courseId: currentCourseIdForGrade.value, studentId: row.studentId, grade: row.grade } }); if (res.data.code === 200) ElMessage.success('已保存'); else ElMessage.error(res.data.message || '保存失败') } catch(e) { ElMessage.error('保存失败，请稍后重试') } }
 
 const evalDialogVisible = ref(false); const currentEvalCourseId = ref(null); const evalForm = reactive({ q1: 20, q2: 20, q3: 20, q4: 20, q5: 20, suggestion: '' });
 const totalEvalScore = computed(() => evalForm.q1 + evalForm.q2 + evalForm.q3 + evalForm.q4 + evalForm.q5 );
 const openEvalDialog = (row) => { currentEvalCourseId.value = row.courseId; evalForm.q1 = 20; evalForm.q2 = 20; evalForm.q3 = 20; evalForm.q4 = 20; evalForm.q5 = 20; evalForm.suggestion = ''; evalDialogVisible.value = true; }
-const submitEvaluation = async () => { if (!evalForm.suggestion.trim()) return ElMessage.warning('请填写建议'); try { await axios.post('/enroll/evaluate', null, { params: { courseId: currentEvalCourseId.value, studentId: myUserId.value, score: totalEvalScore.value, suggestion: evalForm.suggestion.trim() } }); ElMessage.success('提交成功'); evalDialogVisible.value = false; loadMyGrades(); } catch (e) {} }
+const submitEvaluation = async () => { if (!evalForm.suggestion.trim()) return ElMessage.warning('请填写建议'); try { const res = await axios.post('/enroll/evaluate', null, { params: { courseId: currentEvalCourseId.value, studentId: myUserId.value, score: totalEvalScore.value, suggestion: evalForm.suggestion.trim() } }); if (res.data.code === 200) { ElMessage.success('提交成功'); evalDialogVisible.value = false; loadMyGrades() } else ElMessage.error(res.data.message || '提交失败') } catch (e) { ElMessage.error('提交失败，请稍后重试') } }
 const evalStatsDialogVisible = ref(false); const loadingStats = ref(false); const evalStatsData = reactive({ avgScore: 0, suggestions: [] });
 const viewEvalStats = async (course) => { evalStatsDialogVisible.value = true; loadingStats.value = true; try { const res = await axios.get(`/enroll/evalStats?courseId=${course.id}`); if(res.data.code === 200) { evalStatsData.avgScore = res.data.data.avgScore; evalStatsData.suggestions = res.data.data.suggestions || []; } } catch(e){} finally { loadingStats.value = false; } }
 
@@ -538,32 +588,33 @@ const askAI = async () => { const q = userInput.value.trim(); if(!q) return; use
 const scrollToAiBottom = () => { nextTick(() => { if (aiChatBox.value) { aiChatBox.value.scrollTop = aiChatBox.value.scrollHeight; } }); }
 
 const contactList = ref([]); const currentContact = ref(null); const currentChatHistory = ref([]); const chatMessageInput = ref(''); const chatBox = ref(null); let chatTimer = null; let globalTimer = null; const globalUnreadCount = ref(0);
-const fetchGlobalUnread = async () => { if (!isLoggedIn.value || !loginUsername.value) return; try { const res = await axios.get(`/chat/unreadCount?username=${loginUsername.value}`); if (res.data.code === 200) globalUnreadCount.value = res.data.data } catch(e){} }
+const fetchGlobalUnread = async () => { if (!isLoggedIn.value || !loginUsername.value || document.hidden) return; try { const res = await axios.get(`/chat/unreadCount?username=${loginUsername.value}`); if (res.data.code === 200) globalUnreadCount.value = res.data.data } catch(e){} }
 const fetchContacts = async () => { try { const res = await axios.get(`/chat/contacts?role=${userRole.value}`); if (res.data.code === 200) contactList.value = res.data.data || [] } catch(e) {} }
-const selectContact = (contact) => { currentContact.value = contact; fetchChatHistory(); clearChatTimer(); chatTimer = setInterval(() => { fetchChatHistory(false) }, 3000) }
-const fetchChatHistory = async (autoScroll = true) => { if (!currentContact.value) return; try { const res = await axios.get(`/chat/history?sender=${loginUsername.value}&receiver=${currentContact.value.username}`); if (res.data.code === 200) { const oldLen = currentChatHistory.value.length; currentChatHistory.value = res.data.data || []; if (autoScroll || (res.data.data && res.data.data.length > oldLen)) scrollToBottom(); await axios.post(`/chat/markRead?sender=${currentContact.value.username}&receiver=${loginUsername.value}`); fetchGlobalUnread(); } } catch(e) {} }
-const sendP2PMessage = async () => { if (!chatMessageInput.value.trim() || !currentContact.value) return; const msgText = chatMessageInput.value.trim(); chatMessageInput.value = ''; try { await axios.post('/chat/send', { sender: loginUsername.value, receiver: currentContact.value.username, content: msgText }); fetchChatHistory(true) } catch(e) {} }
+const selectContact = (contact) => { currentContact.value = contact; fetchChatHistory(); clearChatTimer(); chatTimer = setInterval(() => { if (!document.hidden && activeMenu.value === 'chat') fetchChatHistory(false) }, 10000) }
+const fetchChatHistory = async (autoScroll = true) => { if (!currentContact.value) return; const contact = currentContact.value.username; try { const res = await axios.get('/chat/history', { params: { sender: loginUsername.value, receiver: contact } }); if (res.data.code === 200 && currentContact.value?.username === contact) { const oldLen = currentChatHistory.value.length; const messages = res.data.data || []; currentChatHistory.value = messages; if (autoScroll || messages.length > oldLen) scrollToBottom(); if (messages.some(message => message.receiver === loginUsername.value && message.isRead === 0)) { await axios.post('/chat/markRead', null, { params: { sender: contact, receiver: loginUsername.value } }); fetchGlobalUnread() } } } catch(e) {} }
+const sendP2PMessage = async () => { if (!chatMessageInput.value.trim() || !currentContact.value) return; const msgText = chatMessageInput.value.trim(); const receiver = currentContact.value.username; chatMessageInput.value = ''; try { const res = await axios.post('/chat/send', { receiver, content: msgText }); if (res.data.code === 200) fetchChatHistory(true); else { chatMessageInput.value = msgText; ElMessage.error(res.data.message || '发送失败') } } catch(e) { chatMessageInput.value = msgText; ElMessage.error('发送失败，请稍后重试') } }
 const scrollToBottom = () => { nextTick(() => { if (chatBox.value) chatBox.value.scrollTop = chatBox.value.scrollHeight }) }
 const clearChatTimer = () => { if (chatTimer) { clearInterval(chatTimer); chatTimer = null } }
 const clearGlobalTimer = () => { if (globalTimer) { clearInterval(globalTimer); globalTimer = null } }
-onUnmounted(() => { clearChatTimer(); clearGlobalTimer(); })
+const onVisibilityChange = () => { if (!document.hidden && isLoggedIn.value) { fetchGlobalUnread(); if (activeMenu.value === 'chat') fetchChatHistory(false) } }
+onUnmounted(() => { clearChatTimer(); clearGlobalTimer(); document.removeEventListener('visibilitychange', onVisibilityChange) })
 const bulkMessageText = ref('');
-const sendBulkMessage = async () => { if (!bulkMessageText.value.trim() || !studentList.value.length) return; for (let s of studentList.value) { try { await axios.post('/chat/send', { sender: loginUsername.value, receiver: s.username, content: bulkMessageText.value.trim() }) } catch(e) {} }; ElMessage.success('发送成功'); bulkMessageText.value = '' }
+const sendBulkMessage = async () => { if (!bulkMessageText.value.trim() || !studentList.value.length) return; const content = bulkMessageText.value.trim(); let failed = 0; for (let i = 0; i < studentList.value.length; i += 8) { const batch = studentList.value.slice(i, i + 8); const results = await Promise.allSettled(batch.map(student => axios.post('/chat/send', { receiver: student.username, content }))); failed += results.filter(result => result.status === 'rejected' || result.value.data.code !== 200).length } if (failed) ElMessage.warning(`${studentList.value.length - failed} 条发送成功，${failed} 条失败`); else { ElMessage.success('全部发送成功'); bulkMessageText.value = '' } }
 
 const profileDialogVisible = ref(false); const loadingProfile = ref(false); const profileForm = reactive({ id: null, username: '', name: '', userNo: '', phone: '', password: '', intro: '', major: '', className: '' })
-const fetchMyInfo = async () => { try { const res = await axios.get(`/auth/getUserInfo?username=${loginUsername.value}`); if (res.data.code === 200) myUserId.value = res.data.data.id; } catch(e){} }
+const fetchMyInfo = async () => { try { const res = await axios.get('/auth/getUserInfo', { params: { username: loginUsername.value } }); if (res.data.code === 200) { myUserId.value = res.data.data.id; userName.value = res.data.data.name || loginUsername.value } } catch(e){} }
 const openProfile = async () => { profileDialogVisible.value = true; loadingProfile.value = true; try { const res = await axios.get(`/auth/getUserInfo?username=${loginUsername.value}`); if (res.data.code === 200) { const u = res.data.data; profileForm.id = u.id; profileForm.username = u.username; profileForm.name = u.name; profileForm.userNo = u.userNo; profileForm.phone = u.phone; profileForm.intro = u.intro; profileForm.major = u.major; profileForm.className = u.className; profileForm.password = ''; } } catch(e) {} finally { loadingProfile.value = false } }
 const submitProfileUpdate = async () => { try { const res = await axios.post('/auth/updateProfile', profileForm); if (res.data.code === 200) { ElMessage.success('更新成功！'); profileDialogVisible.value = false; userName.value = profileForm.name; } } catch(e) {} }
 
 const initData = async () => { 
   await fetchMyInfo(); 
   fetchBanners(); 
-  if(userRole.value==='STUDENT'){ fetchCourses(); fetchRecommendCourses(); loadMySchedule(); } 
+  if(userRole.value==='STUDENT'){ fetchCourses(); loadMySchedule(); }
   if(userRole.value==='ADMIN') loadAdminCourses(); 
   if(userRole.value==='TEACHER') loadMyCourses(); 
-  if (userRole.value === 'STUDENT' || userRole.value === 'TEACHER') { fetchGlobalUnread(); clearGlobalTimer(); globalTimer = setInterval(fetchGlobalUnread, 3000); }
+  if (userRole.value === 'STUDENT' || userRole.value === 'TEACHER') { fetchGlobalUnread(); clearGlobalTimer(); globalTimer = setInterval(fetchGlobalUnread, 15000); }
 }
-onMounted(() => { if(isLoggedIn.value){ parseToken(); initData(); } })
+onMounted(() => { document.addEventListener('visibilitychange', onVisibilityChange); if(isLoggedIn.value){ parseToken(); if (isLoggedIn.value) initData(); } })
 </script>
 
 <style>
@@ -571,20 +622,21 @@ onMounted(() => { if(isLoggedIn.value){ parseToken(); initData(); } })
    🎨 核心设计系统 (包含最新毛玻璃效果与全局壁纸)
    ========================================== */
 :root {
-  --background: rgba(255, 255, 255, 0.85); 
-  --foreground: #09090b;
-  --muted: rgba(244, 244, 245, 0.6);
-  --muted-foreground: #71717a;
-  --primary: #18181b;
+  --background: #ffffff;
+  --foreground: #17263c;
+  --muted: #f1f5fa;
+  --muted-foreground: #64748b;
+  --primary: #2455bf;
   --primary-foreground: #fafafa;
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --border: rgba(228, 228, 231, 0.5);
+  --border: #dfe7f2;
   
-  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px;
-  --shadow-sm: 0 4px 12px 0 rgba(31, 38, 135, 0.05);
-  --shadow-md: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  --radius-sm: 8px; --radius-md: 14px; --radius-lg: 18px;
+  --shadow-sm: 0 4px 16px rgba(37, 72, 123, 0.06);
+  --shadow-md: 0 16px 48px rgba(37, 72, 123, 0.12);
+  --el-color-primary: #2455bf;
 
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
   --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px;
@@ -594,11 +646,7 @@ body {
   margin: 0; 
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
   color: var(--foreground); 
-  background-image: url('/login-bg.jpg'); 
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
+  background: #f4f7fb;
 }
 
 .text-h1 { font-size: 32px; line-height: 40px; font-weight: 700; letter-spacing: -0.02em; color: var(--foreground); }
@@ -614,12 +662,12 @@ body {
 .line-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* Element-Plus 样式强行覆写 */
-.el-card { border-radius: var(--radius-md) !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; box-shadow: var(--shadow-sm) !important; padding: var(--space-4) !important; background: var(--background) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; }
+.el-card { border-radius: var(--radius-md) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-sm) !important; padding: var(--space-4) !important; background: var(--background) !important; }
 .el-card__body { padding: 0 !important; }
 .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-5); }
 .el-button { border-radius: var(--radius-sm) !important; font-weight: 500 !important; }
 .el-button--primary { background-color: var(--primary) !important; border-color: var(--primary) !important; color: var(--primary-foreground) !important; }
-.el-input__wrapper, .el-textarea__inner { border-radius: var(--radius-sm) !important; box-shadow: 0 0 0 1px var(--border) inset !important; background: rgba(255,255,255,0.5) !important; }
+.el-input__wrapper, .el-textarea__inner { border-radius: var(--radius-sm) !important; box-shadow: 0 0 0 1px var(--border) inset !important; background: #fff !important; }
 .el-input__wrapper.is-focus, .el-textarea__inner:focus { box-shadow: 0 0 0 1px var(--primary) inset !important; }
 .el-table { --el-table-border-color: var(--border); --el-table-header-bg-color: var(--muted); background: transparent !important; }
 .el-table tr, .el-table th.el-table__cell { background-color: transparent !important; }
@@ -627,8 +675,8 @@ body {
 .el-dialog { border-radius: var(--radius-md) !important; background: rgba(255, 255, 255, 0.95) !important; backdrop-filter: blur(20px) !important; }
 
 /* 登录页打通背景 */
-.login-wrapper { display: flex; justify-content: center; align-items: center; height: 100vh; background: transparent; }
-.login-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.15); z-index: 1;}
+.login-wrapper { display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; padding: var(--space-6); background: linear-gradient(130deg, rgba(16, 39, 80, 0.78), rgba(22, 70, 140, 0.32)), url('/login-bg.jpg') center / cover; }
+.login-overlay { display: none; }
 .modern-auth-card { width: 400px; padding: var(--space-6) !important; border: none !important; z-index: 2; box-shadow: var(--shadow-md) !important; }
 .register-card { width: 600px; }
 .auth-header { text-align: center; margin-bottom: var(--space-6); }
@@ -636,9 +684,9 @@ body {
 
 /* 主框架与毛玻璃导航栏 */
 .app-layout { display: flex; flex-direction: column; min-height: 100vh; }
-.main-header { display: flex; justify-content: space-between; align-items: center; padding: 0 var(--space-6); height: 64px; background: rgba(255, 255, 255, 0.75) !important; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255, 255, 255, 0.4); position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+.main-header { display: flex; justify-content: space-between; align-items: center; padding: 0 var(--space-6); min-height: 72px; background: #fff; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 10px rgba(37,72,123,0.04); }
 .el-menu { background: transparent !important; }
-.header-menu { flex: 1; margin: 0 var(--space-8); }
+.header-menu { flex: 1; min-width: 0; margin: 0 var(--space-8); overflow-x: auto; scrollbar-width: thin; }
 .main-content { padding: var(--space-8); max-width: 1400px; margin: 0 auto; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--space-6); }
 
 /* 轮播图与推荐 */
@@ -712,4 +760,70 @@ body {
 .score-board { background: linear-gradient(135deg, var(--primary) 0%, #3f3f46 100%); color: white; text-align: center; padding: var(--space-6); border-radius: var(--radius-md); box-shadow: var(--shadow-md); }
 .suggestion-list { max-height: 300px; overflow-y: auto; padding-right: var(--space-1); }
 .suggestion-item { background: rgba(244,244,245,0.8); padding: var(--space-3); border-radius: var(--radius-sm); margin-bottom: var(--space-2); border: 1px solid var(--border); }
+
+/* 清晰的导航层级与小屏布局 */
+.header-left { display: flex; align-items: center; gap: 11px; flex-shrink: 0; }
+.app-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: var(--primary); color: #fff; font-size: 20px; font-weight: 700; }
+.brand-copy { display: flex; flex-direction: column; line-height: 1.2; }
+.brand-copy strong { font-size: 16px; letter-spacing: .02em; }
+.brand-copy small { color: var(--muted-foreground); font-size: 10px; letter-spacing: .06em; margin-top: 3px; }
+.header-menu .el-menu { width: max-content; min-width: 100%; }
+.header-menu .el-menu-item { padding: 0 14px; font-size: 13px; white-space: nowrap; }
+.header-menu .el-menu-item.is-active { color: var(--primary); font-weight: 700; }
+.header-right { flex-shrink: 0; }
+.user-info { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 999px; }
+.nav-badge { margin-left: 5px; }
+.mobile-menu-button { display: none !important; }
+.welcome-panel { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px 30px; margin-bottom: 24px; border: 1px solid #dce7fa; border-radius: var(--radius-lg); background: linear-gradient(110deg, #e8f0ff, #fff 70%); }
+.welcome-panel h2 { margin: 5px 0; font-size: 26px; line-height: 1.25; }
+.welcome-panel p { margin: 0; color: var(--muted-foreground); }
+.eyebrow { color: var(--primary); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+.welcome-count { display: flex; flex-direction: column; align-items: center; min-width: 110px; padding: 12px 16px; background: #fff; border: 1px solid var(--border); border-radius: 12px; color: var(--muted-foreground); font-size: 12px; }
+.welcome-count strong { color: var(--primary); font-size: 28px; line-height: 1.2; }
+.empty-banner { display: flex; flex-direction: column; justify-content: center; height: 260px; box-sizing: border-box; padding: 35px; border: 1px solid #dce7fa; border-radius: var(--radius-lg); background: linear-gradient(125deg, #eff5ff, #dceaff); }
+.empty-banner h3 { margin: 9px 0; font-size: 24px; }
+.empty-banner p { margin: 0; color: var(--muted-foreground); line-height: 1.6; }
+.course-toolbar { display: flex; gap: 12px; margin-bottom: 18px; }
+.course-toolbar .el-input { max-width: 360px; }
+.course-toolbar .el-select { width: 150px; }
+.course-pagination { justify-content: flex-end; margin-top: 18px; }
+.result-count { color: var(--muted-foreground); font-size: 13px; }
+.mobile-course-list { display: none; }
+.mobile-course-card { padding: 16px 0; border-bottom: 1px solid var(--border); }
+.mobile-course-meta { display: flex; gap: 6px; margin-bottom: 8px; }
+.course-title-button { padding: 0; border: 0; background: transparent; color: var(--primary); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.mobile-course-card p { margin: 7px 0 12px; color: var(--muted-foreground); font-size: 13px; }
+.mobile-course-hint { color: var(--muted-foreground); font-size: 13px; }
+.matrix-card { overflow-x: auto; }
+.matrix-table { min-width: 730px; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (max-width: 1050px) {
+  .main-header { gap: 16px; padding: 0 16px; }
+  .header-menu { display: none; }
+  .mobile-menu-button { display: inline-flex !important; margin-left: auto; }
+  .main-content { padding: 22px 16px; }
+  .main-content > div > .el-row > .el-col { max-width: 100%; flex: 0 0 100%; margin-bottom: 16px; }
+  .recommend-panel { min-height: 220px; }
+}
+@media (max-width: 600px) {
+  .brand-copy small, .user-info .el-tag { display: none; }
+  .main-header { min-height: 60px; }
+  .main-content { padding: 16px 10px; }
+  .modern-auth-card, .register-card { width: min(100%, 440px); box-sizing: border-box; }
+  .register-card .el-col-12 { max-width: 100%; flex: 0 0 100%; }
+  .welcome-panel { padding: 18px; align-items: flex-start; }
+  .welcome-panel h2 { font-size: 21px; }
+  .welcome-count { min-width: 62px; padding: 8px; }
+  .card-header, .forum-header-bar { flex-wrap: wrap; gap: 12px; }
+  .course-toolbar { flex-wrap: wrap; }
+  .course-toolbar .el-input { max-width: none; }
+  .course-toolbar .el-select { width: 100%; }
+  .desktop-course-table { display: none; }
+  .mobile-course-list { display: block; }
+  .el-dialog { width: calc(100vw - 20px) !important; margin: 5vh auto !important; }
+  .p2p-chat-layout { flex-direction: column; }
+  .p2p-sidebar { width: 100%; height: 145px; border-right: 0; border-bottom: 1px solid var(--border); }
+  .p2p-main { min-height: 320px; }
+  .forum-header-bar .el-input { width: 100% !important; }
+}
 </style>

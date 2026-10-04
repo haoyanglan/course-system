@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.courserec.coursesystem.common.Result;
 import com.courserec.coursesystem.entity.SysUser;
 import com.courserec.coursesystem.service.ISysUserService;
+import com.courserec.coursesystem.utils.PasswordUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +37,15 @@ public class LoginController {
      */
     @PostMapping("/register")
     public Result<String> register(@RequestBody SysUser user) {
+        if (user.getUsername() == null || user.getUsername().isBlank() || user.getName() == null || user.getName().isBlank()) {
+            return Result.error("请填写账号和姓名");
+        }
+        if (!"STUDENT".equals(user.getRole()) && !"TEACHER".equals(user.getRole())) {
+            return Result.error("只能注册学生或教师账号");
+        }
+        if (user.getPassword() == null || user.getPassword().length() < 8) {
+            return Result.error("密码至少需要 8 位");
+        }
         // 1. 检查账号是否已经被别人注册了
         QueryWrapper<SysUser> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("username", user.getUsername());
@@ -47,6 +57,8 @@ public class LoginController {
         }
 
         // 2. 将包含学号/工号、联系方式、教师介绍的完整信息存入数据库
+        user.setId(null);
+        user.setPassword(PasswordUtils.hash(user.getPassword()));
         boolean saved = sysUserService.save(user);
 
         if (saved) {
@@ -64,6 +76,9 @@ public class LoginController {
         String username = params.get("username");
         String phone = params.get("phone");
         String newPassword = params.get("newPassword");
+        if (username == null || username.isBlank() || phone == null || phone.isBlank() || newPassword == null || newPassword.length() < 8) {
+            return Result.error("请填写完整信息，新密码至少 8 位");
+        }
 
         // 1. 根据填写的账号和联系方式，去数据库里找人对暗号
         QueryWrapper<SysUser> queryWrapper = new QueryWrapper<>();
@@ -75,7 +90,7 @@ public class LoginController {
         }
 
         // 2. 暗号对上了，给他换成新密码
-        user.setPassword(newPassword);
+        user.setPassword(PasswordUtils.hash(newPassword));
         // updateById 是 MyBatis-Plus 自带的更新功能
         boolean updated = sysUserService.updateById(user);
 
@@ -89,7 +104,8 @@ public class LoginController {
      * 【新增】：获取当前登录用户的详细信息
      */
     @GetMapping("/getUserInfo")
-    public Result<SysUser> getUserInfo(@RequestParam String username) {
+    public Result<SysUser> getUserInfo(@RequestParam String username, @RequestAttribute("authUsername") String authUsername) {
+        if (!authUsername.equals(username)) return Result.error("只能查看自己的资料");
         QueryWrapper<SysUser> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("username", username);
         SysUser user = sysUserService.getOne(queryWrapper);
@@ -103,9 +119,23 @@ public class LoginController {
      * 【新增】：保存个人中心的修改
      */
     @PostMapping("/updateProfile")
-    public Result<String> updateProfile(@RequestBody SysUser user) {
-        // user 对象里必须有 id，updateById 才能起作用
-        boolean updated = sysUserService.updateById(user);
+    public Result<String> updateProfile(@RequestBody SysUser user, @RequestAttribute("authUsername") String authUsername) {
+        SysUser current = sysUserService.getOne(new QueryWrapper<SysUser>().eq("username", authUsername));
+        if (current == null || user.getId() == null || !current.getId().equals(user.getId())) {
+            return Result.error("只能修改自己的资料");
+        }
+        if (user.getPassword() != null && !user.getPassword().isBlank() && user.getPassword().length() < 8) {
+            return Result.error("新密码至少需要 8 位");
+        }
+        current.setName(user.getName());
+        current.setPhone(user.getPhone());
+        current.setIntro(user.getIntro());
+        current.setMajor(user.getMajor());
+        current.setClassName(user.getClassName());
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            current.setPassword(PasswordUtils.hash(user.getPassword()));
+        }
+        boolean updated = sysUserService.updateById(current);
         if (updated) {
             return Result.success("个人信息修改成功！", null);
         } else {

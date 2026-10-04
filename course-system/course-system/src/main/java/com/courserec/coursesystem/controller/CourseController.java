@@ -37,6 +37,17 @@ public class CourseController {
     public Result<List<java.util.Map<String, Object>>> getCourseList() {
         // 【核心修改】：按照 ID 倒序排列，最新发布的永远在最上面！
         List<Course> courses = courseService.list(new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Course>().orderByDesc("id"));
+        // 一次查询本页涉及的教师，避免每门课程都访问一次数据库。
+        Set<Long> teacherIds = new HashSet<>();
+        for (Course course : courses) {
+            if (course.getTeacherId() != null) teacherIds.add(course.getTeacherId());
+        }
+        Map<Long, SysUser> teachers = new HashMap<>();
+        if (!teacherIds.isEmpty()) {
+            for (SysUser teacher : sysUserService.listByIds(teacherIds)) {
+                teachers.put(teacher.getId(), teacher);
+            }
+        }
 
         List<java.util.Map<String, Object>> resList = new java.util.ArrayList<>();
         for (Course c : courses) {
@@ -53,7 +64,7 @@ public class CourseController {
             map.put("status", c.getStatus());
 
             if (c.getTeacherId() != null) {
-                SysUser teacher = sysUserService.getById(c.getTeacherId());
+                SysUser teacher = teachers.get(c.getTeacherId());
                 map.put("teacher", teacher != null ? teacher.getName() : "未知老师");
             } else {
                 map.put("teacher", "暂无");
@@ -64,7 +75,8 @@ public class CourseController {
     }
     // 【新增 2】：给老师用的专属接口
     @GetMapping("/teacherList")
-    public Result<List<Course>> getTeacherCourses(@RequestParam String username) {
+    public Result<List<Course>> getTeacherCourses(@RequestParam String username, @RequestAttribute("authUsername") String authUsername) {
+        if (!authUsername.equals(username)) return Result.error("只能查看自己的授课课程");
         // 1. 去 sys_user 表查这个老师的信息，拿到他的数据库 ID
         QueryWrapper<SysUser> userQuery = new QueryWrapper<>();
         userQuery.eq("username", username);
@@ -88,7 +100,15 @@ public class CourseController {
      * 【新增】：管理员功能 - 添加一门新课程
      */
     @PostMapping("/add")
-    public Result<String> addCourse(@RequestBody Course course) {
+    public Result<String> addCourse(@RequestBody Course course, @RequestAttribute("authUsername") String authUsername,
+                                    @RequestAttribute("authRole") String authRole) {
+        if (!"TEACHER".equals(authRole) && !"ADMIN".equals(authRole)) return Result.error("无权发布课程");
+        if ("TEACHER".equals(authRole)) {
+            SysUser teacher = sysUserService.getOne(new QueryWrapper<SysUser>().eq("username", authUsername));
+            if (teacher == null) return Result.error("教师账号不存在");
+            course.setTeacherId(teacher.getId());
+        }
+        if (course.getTitle() == null || course.getTitle().isBlank()) return Result.error("请填写课程名称");
         System.out.println("====== 开始发布新课程 ======");
         System.out.println("1. 接收到类型：" + course.getCourseType() + " | 专业：" + course.getTargetMajor());
 
@@ -147,7 +167,13 @@ public class CourseController {
      * 【新增】：修改课程信息接口 (供老师和管理员使用)
      */
     @PostMapping("/update")
-    public Result<String> updateCourse(@RequestBody Course course) {
+    public Result<String> updateCourse(@RequestBody Course course, @RequestAttribute("authUsername") String authUsername,
+                                       @RequestAttribute("authRole") String authRole) {
+        if (!"TEACHER".equals(authRole) && !"ADMIN".equals(authRole)) return Result.error("无权修改课程");
+        Course existing = course.getId() == null ? null : courseService.getById(course.getId());
+        if (existing == null) return Result.error("课程不存在");
+        if ("TEACHER".equals(authRole) && !isCourseTeacher(existing, authUsername)) return Result.error("只能修改自己的课程");
+        course.setTeacherId(existing.getTeacherId());
         boolean updated = courseService.updateById(course);
         if (updated) {
             return Result.success("课程信息修改成功！", null);
@@ -158,14 +184,29 @@ public class CourseController {
      * 【新增业务逻辑】：老师一键结课
      */
     @PostMapping("/complete")
-    public Result<String> completeCourse(@RequestParam Long id) {
+    public Result<String> completeCourse(@RequestParam Long id, @RequestAttribute("authUsername") String authUsername) {
         Course course = courseService.getById(id);
-        if(course != null) {
-            course.setStatus(2); // 状态 2 代表已完结
-            courseService.updateById(course);
-        }
+        if (course == null) return Result.error("课程不存在");
+        if (!isCourseTeacher(course, authUsername)) return Result.error("只能结课自己的课程");
+        course.setStatus(2); // 状态 2 代表已完结
+        courseService.updateById(course);
         return Result.success("课程已完结", null);
-    }// ================= 引入依赖的 Mapper (如果已有可忽略) =================
+    }
+
+    @PostMapping("/delete")
+    public Result<String> deleteCourse(@RequestParam Long id) {
+        if (courseService.getById(id) == null) return Result.error("课程不存在");
+        if (enrollmentService.count(new QueryWrapper<com.courserec.coursesystem.entity.Enrollment>().eq("course_id", id)) > 0) {
+            return Result.error("已有学生选课，请先处理选课记录");
+        }
+        return courseService.removeById(id) ? Result.success("删除成功", null) : Result.error("删除失败");
+    }
+
+    private boolean isCourseTeacher(Course course, String username) {
+        SysUser teacher = sysUserService.getOne(new QueryWrapper<SysUser>().eq("username", username));
+        return teacher != null && teacher.getId().equals(course.getTeacherId());
+    }
+    // ================= 引入依赖的 Mapper (如果已有可忽略) =================
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.courserec.coursesystem.mapper.CourseMapper courseMapper;
 
